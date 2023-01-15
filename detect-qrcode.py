@@ -86,6 +86,39 @@ last_updated_time = {
     "39": np.full(45, time.time()),
 }
 
+active_members = {
+    "11": [],
+    "11": [],
+    "11": [],
+    "12": [],
+    "13": [],
+    "14": [],
+    "15": [],
+    "16": [],
+    "17": [],
+    "18": [],
+    "19": [],
+    "21": [],
+    "22": [],
+    "23": [],
+    "24": [],
+    "25": [],
+    "26": [],
+    "27": [],
+    "28": [],
+    "29": [],
+    "30": [],
+    "31": [],
+    "32": [],
+    "33": [],
+    "34": [],
+    "35": [],
+    "36": [],
+    "37": [],
+    "38": [],
+    "39": [],
+}
+
 # gui messagebox
 def msgbox(title, content):
     root = tkinter.Tk()
@@ -172,19 +205,34 @@ def detectqrcode(frame):
 def updatestatus(contents):
     global status, last_updated_time
 
+    max_active = 20
+
     for content in contents:
+        key = [str(content[:2])]
         if (
             time.time()
-            - last_updated_time[str(str(content)[:2])][int(content) % 100]
+            - last_updated_time[str(content[:2])][int(content) % 100]
             >= 10
         ):
-            status[str(content)[:2]][int(content) % 100] *= -1
-            last_updated_time[str(str(content)[:2])][
-                int(content) % 100
-            ] = time.time()
-            print("Updated list: {}".format(content))
+            if not content in active_members[str(content[:2])]:
+                if len(active_members[str(content[:2])]) <= max_active:
+                    status[str(content[:2])][int(content) % 100] *= -1
+                    last_updated_time[str(content[:2])][
+                        int(content) % 100
+                    ] = time.time()
+                    active_members[str(content[:2])].append(content)
+                    print("Append {}".format(content))
+                else:
+                    print("Up to only 20 people: {}".format(content))
+            else:
+                last_updated_time[str(content[:2])][
+                    int(content) % 100
+                ] = time.time()
+                active_members[str(content[:2])].remove(content)
+                print("Remove {}".format(content))
+
         else:
-            print("Try it after some time: {}".format(content))
+            pass
 
     return None
 
@@ -214,7 +262,6 @@ def readvideo(src):
         if frame_num % (f / 5) == 0:
             contents, frame = detectqrcode(frame)
             if not len(contents) == 0:
-                print("{}: {}".format(frame_num, contents))
                 updatestatus(contents)
             else:
                 pass
@@ -233,7 +280,7 @@ def readvideo(src):
     cap.release()
     cv.destroyAllWindows()
 
-    print(status)
+    print(status, active_members, sep=",\n")
 
     return None
 
