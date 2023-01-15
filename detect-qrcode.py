@@ -1,12 +1,13 @@
+import copy
 import ctypes
+import time
 import tkinter
 import tkinter.filedialog
 import tkinter.messagebox
-import copy
-import pyautogui
-import time
 
 import cv2 as cv
+import numpy as np
+import pyautogui
 from pyzbar.pyzbar import decode
 
 # bgr color dict
@@ -16,6 +17,74 @@ color = {
     "red": ((0, 0, 255)),
 }
 
+# optimized for my shcool
+# 11-19HR, 21-29HR, 30-39HR each class has less than 45 students
+# inactive=-1 / active=1
+status = {
+    "11": np.full(45, -1),
+    "11": np.full(45, -1),
+    "11": np.full(45, -1),
+    "12": np.full(45, -1),
+    "13": np.full(45, -1),
+    "14": np.full(45, -1),
+    "15": np.full(45, -1),
+    "16": np.full(45, -1),
+    "17": np.full(45, -1),
+    "18": np.full(45, -1),
+    "19": np.full(45, -1),
+    "21": np.full(45, -1),
+    "22": np.full(45, -1),
+    "23": np.full(45, -1),
+    "24": np.full(45, -1),
+    "25": np.full(45, -1),
+    "26": np.full(45, -1),
+    "27": np.full(45, -1),
+    "28": np.full(45, -1),
+    "29": np.full(45, -1),
+    "30": np.full(45, -1),
+    "31": np.full(45, -1),
+    "32": np.full(45, -1),
+    "33": np.full(45, -1),
+    "34": np.full(45, -1),
+    "35": np.full(45, -1),
+    "36": np.full(45, -1),
+    "37": np.full(45, -1),
+    "38": np.full(45, -1),
+    "39": np.full(45, -1),
+}
+
+last_updated_time = {
+    "11": np.full(45, time.time()),
+    "11": np.full(45, time.time()),
+    "11": np.full(45, time.time()),
+    "12": np.full(45, time.time()),
+    "13": np.full(45, time.time()),
+    "14": np.full(45, time.time()),
+    "15": np.full(45, time.time()),
+    "16": np.full(45, time.time()),
+    "17": np.full(45, time.time()),
+    "18": np.full(45, time.time()),
+    "19": np.full(45, time.time()),
+    "21": np.full(45, time.time()),
+    "22": np.full(45, time.time()),
+    "23": np.full(45, time.time()),
+    "24": np.full(45, time.time()),
+    "25": np.full(45, time.time()),
+    "26": np.full(45, time.time()),
+    "27": np.full(45, time.time()),
+    "28": np.full(45, time.time()),
+    "29": np.full(45, time.time()),
+    "30": np.full(45, time.time()),
+    "31": np.full(45, time.time()),
+    "32": np.full(45, time.time()),
+    "33": np.full(45, time.time()),
+    "34": np.full(45, time.time()),
+    "35": np.full(45, time.time()),
+    "36": np.full(45, time.time()),
+    "37": np.full(45, time.time()),
+    "38": np.full(45, time.time()),
+    "39": np.full(45, time.time()),
+}
 
 # gui messagebox
 def msgbox(title, content):
@@ -100,10 +169,30 @@ def detectqrcode(frame):
     return contents, frame
 
 
+def updatestatus(contents):
+    global status, last_updated_time
+
+    for content in contents:
+        if (
+            time.time()
+            - last_updated_time[str(str(content)[:2])][int(content) % 100]
+            >= 10
+        ):
+            status[str(content)[:2]][int(content) % 100] *= -1
+            last_updated_time[str(str(content)[:2])][
+                int(content) % 100
+            ] = time.time()
+            print("Updated list: {}".format(content))
+        else:
+            print("Try it after some time: {}".format(content))
+
+    return None
+
+
 # read videos with cv2
-
-
 def readvideo(src):
+    global status, last_updated_time
+
     if src == 0:
         window_title = "marker-tracking [Camera 0]"
     else:
@@ -123,12 +212,17 @@ def readvideo(src):
             break
 
         if frame_num % (f / 5) == 0:
-            contens, frame = detectqrcode(frame)
-            print(contens)
+            contents, frame = detectqrcode(frame)
+            if not len(contents) == 0:
+                print("{}: {}".format(frame_num, contents))
+                updatestatus(contents)
+            else:
+                pass
         else:
             pass
 
         resized_frame = cv.resize(copy.copy(frame), dsize=(rw, rh))
+        resized_frame = cv.flip(resized_frame, 1)
         cv.imshow(window_title, resized_frame)
 
         if cv.waitKey(1) & 0xFF == 27:
@@ -139,6 +233,8 @@ def readvideo(src):
     cap.release()
     cv.destroyAllWindows()
 
+    print(status)
+
     return None
 
 
@@ -147,5 +243,7 @@ if __name__ == "__main__":
         ctypes.windll.shcore.SetProcessDpiAwareness(True)
     except:
         pass
+
+    print(status, sep=",\n")
 
     readvideo(0)
