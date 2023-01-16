@@ -119,6 +119,8 @@ active_members = {
     "39": [],
 }
 
+last_log = time.time()
+
 # gui messagebox
 def msgbox(title, content):
     root = tkinter.Tk()
@@ -208,27 +210,27 @@ def updatestatus(contents):
     max_active = 20
 
     for content in contents:
-        key = [str(content[:2])]
+        key = [str(int(content) // 100)]
         if (
             time.time()
-            - last_updated_time[str(content[:2])][int(content) % 100]
+            - last_updated_time[str(int(content) // 100)][int(content) % 100]
             >= 10
         ):
-            if not content in active_members[str(content[:2])]:
-                if len(active_members[str(content[:2])]) <= max_active:
-                    status[str(content[:2])][int(content) % 100] *= -1
-                    last_updated_time[str(content[:2])][
+            if not content in active_members[str(int(content) // 100)]:
+                if len(active_members[str(int(content) // 100)]) <= max_active:
+                    status[str(int(content) // 100)][int(content) % 100] *= -1
+                    last_updated_time[str(int(content) // 100)][
                         int(content) % 100
                     ] = time.time()
-                    active_members[str(content[:2])].append(content)
+                    active_members[str(int(content) // 100)].append(content)
                     print("Append {}".format(content))
                 else:
                     print("Up to only 20 people: {}".format(content))
             else:
-                last_updated_time[str(content[:2])][
+                last_updated_time[str(int(content) // 100)][
                     int(content) % 100
                 ] = time.time()
-                active_members[str(content[:2])].remove(content)
+                active_members[str(int(content) // 100)].remove(content)
                 print("Remove {}".format(content))
 
         else:
@@ -237,9 +239,19 @@ def updatestatus(contents):
     return None
 
 
+# check list and save to excel worksheet
+def checklist(list):
+    global last_log
+
+    last_log = time.time()
+    print(list)
+
+    # I'll add OpenPyXL process
+
+
 # read videos with cv2
 def readvideo(src):
-    global status, last_updated_time
+    global status, last_updated_time, active_members
 
     if src == 0:
         window_title = "marker-tracking [Camera 0]"
@@ -272,6 +284,9 @@ def readvideo(src):
         resized_frame = cv.flip(resized_frame, 1)
         cv.imshow(window_title, resized_frame)
 
+        if time.time() - last_log >= 60:
+            checklist(active_members)
+
         if cv.waitKey(1) & 0xFF == 27:
             break
 
@@ -290,7 +305,5 @@ if __name__ == "__main__":
         ctypes.windll.shcore.SetProcessDpiAwareness(True)
     except:
         pass
-
-    print(status, sep=",\n")
 
     readvideo(0)
