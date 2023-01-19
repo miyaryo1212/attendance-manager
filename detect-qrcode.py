@@ -23,7 +23,8 @@ color = {
 # optimized for my shcool
 # 11-19HR, 21-29HR, 30-39HR each class has less than 45 students
 # inactive=-1 / active=1
-HRs = [
+# hard-coding
+groups = [
     "11",
     "12",
     "13",
@@ -55,18 +56,18 @@ HRs = [
 ]
 
 status = {}
-for HR in HRs:
-    status[HR] = np.full(46, -1)
+for group in groups:
+    status[group] = np.full(46, -1)
 
-last_updated_time = {}
-for HR in HRs:
-    last_updated_time[HR] = np.full(46, time.time())
+last_action = {}
+for group in groups:
+    last_action[group] = np.full(46, time.time())
 
 active_members = {}
-for HR in HRs:
-    active_members[HR] = []
+for group in groups:
+    active_members[group] = []
 
-last_log = time.time()
+last_output_time = time.time()
 
 # gui messagebox
 def msgbox(title, content):
@@ -152,32 +153,32 @@ def detectqrcode(frame):
 
 
 def updatestatus(contents):
-    global status, last_updated_time
+    global status, last_action
 
     max_active = 20
 
     for content in contents:
-        key = [str(int(content) // 100)]
+        key = str(int(content) // 100)
         if (
             time.time()
-            - last_updated_time[str(int(content) // 100)][int(content) % 100]
+            - last_action[key][int(content) % 100]
             >= 10
         ):
-            if not content in active_members[str(int(content) // 100)]:
-                if len(active_members[str(int(content) // 100)]) <= max_active:
-                    status[str(int(content) // 100)][int(content) % 100] *= -1
-                    last_updated_time[str(int(content) // 100)][
+            if not content in active_members[key]:
+                if len(active_members[key]) <= max_active:
+                    status[key][int(content) % 100] *= -1
+                    last_action[key][
                         int(content) % 100
                     ] = time.time()
-                    active_members[str(int(content) // 100)].append(content)
+                    active_members[key].append(content)
                     print("Append {}".format(content))
                 else:
                     print("Up to only 20 people: {}".format(content))
             else:
-                last_updated_time[str(int(content) // 100)][
+                last_action[key][
                     int(content) % 100
                 ] = time.time()
-                active_members[str(int(content) // 100)].remove(content)
+                active_members[key].remove(content)
                 print("Remove {}".format(content))
 
         else:
@@ -188,18 +189,17 @@ def updatestatus(contents):
 
 # check list and save to excel worksheet
 def checklist(list, bookpath):
-    print("checklist func")
-    global last_log
+    global last_output_time
 
-    last_log = time.time()
+    last_output_time = time.time()
     workbook = openpyxl.load_workbook(bookpath)
     time_now = datetime.datetime.now().strftime("%H:%M")
-    for HR in list:
-        worksheet = workbook[HR]
+    for group in list:
+        worksheet = workbook[group]
         target_row = worksheet.max_row + 1
         worksheet.cell(target_row, 1).value = time_now
         counter = 0
-        for i in list[HR]:
+        for i in list[group]:
             worksheet.cell(target_row, counter + 2).value = i
             counter += 1
     workbook.save(bookpath)
@@ -207,7 +207,7 @@ def checklist(list, bookpath):
 
 # read videos with cv2
 def readvideo(src, bookpath):
-    global status, last_updated_time, active_members
+    global status, last_action, active_members
 
     if src == 0:
         window_title = "marker-tracking [Camera 0]"
@@ -240,7 +240,7 @@ def readvideo(src, bookpath):
         resized_frame = cv.flip(resized_frame, 1)
         cv.imshow(window_title, resized_frame)
 
-        if time.time() - last_log >= 15:
+        if time.time() - last_output_time >= 15:
             checklist(active_members, bookpath)
 
         if cv.waitKey(1) & 0xFF == 27:
@@ -250,8 +250,6 @@ def readvideo(src, bookpath):
 
     cap.release()
     cv.destroyAllWindows()
-
-    print(status, active_members, sep=",\n")
 
     return None
 
@@ -272,10 +270,9 @@ if __name__ == "__main__":
     if not os.path.exists(dirpath + bookname):
         openpyxl.Workbook().save(dirpath + bookname)
         workbook = openpyxl.load_workbook(dirpath + bookname)
-        for HR in HRs:
-            workbook.create_sheet(HR)
+        for group in groups:
+            workbook.create_sheet(group)
         workbook.save(dirpath + bookname)
-        print("Created workbook")
     else:
         pass
 
