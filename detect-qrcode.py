@@ -56,11 +56,11 @@ HRs = [
 
 status = {}
 for HR in HRs:
-    status[HR] = np.full(45, -1)
+    status[HR] = np.full(46, -1)
 
 last_updated_time = {}
 for HR in HRs:
-    status[HR] = np.full(45, time.time())
+    last_updated_time[HR] = np.full(46, time.time())
 
 active_members = {}
 for HR in HRs:
@@ -187,17 +187,26 @@ def updatestatus(contents):
 
 
 # check list and save to excel worksheet
-def checklist(list):
+def checklist(list, bookpath):
+    print("checklist func")
     global last_log
 
     last_log = time.time()
-    print(list)
-
-    # I'll add OpenPyXL process
+    workbook = openpyxl.load_workbook(bookpath)
+    time_now = datetime.datetime.now().strftime("%H:%M")
+    for HR in list:
+        worksheet = workbook[HR]
+        target_row = worksheet.max_row + 1
+        worksheet.cell(target_row, 1).value = time_now
+        counter = 0
+        for i in list[HR]:
+            worksheet.cell(target_row, counter + 2).value = i
+            counter += 1
+    workbook.save(bookpath)
 
 
 # read videos with cv2
-def readvideo(src):
+def readvideo(src, bookpath):
     global status, last_updated_time, active_members
 
     if src == 0:
@@ -231,8 +240,8 @@ def readvideo(src):
         resized_frame = cv.flip(resized_frame, 1)
         cv.imshow(window_title, resized_frame)
 
-        if time.time() - last_log >= 60:
-            checklist(active_members)
+        if time.time() - last_log >= 15:
+            checklist(active_members, bookpath)
 
         if cv.waitKey(1) & 0xFF == 27:
             break
@@ -259,15 +268,15 @@ if __name__ == "__main__":
     else:
         pass
 
-    bookpath = "/{}.xlsx".format(datetime.datetime.now().strftime("%Y-%m-%d"))
-    if not os.path.exists(dirpath + bookpath):
-        openpyxl.Workbook().save(dirpath + bookpath)
-        workbook = openpyxl.load_workbook(dirpath + bookpath)
+    bookname = "/{}.xlsx".format(datetime.datetime.now().strftime("%Y-%m-%d"))
+    if not os.path.exists(dirpath + bookname):
+        openpyxl.Workbook().save(dirpath + bookname)
+        workbook = openpyxl.load_workbook(dirpath + bookname)
         for HR in HRs:
-            workbook.create_sheet("{}HR".format(HR))
-        workbook.save(dirpath + bookpath)
+            workbook.create_sheet(HR)
+        workbook.save(dirpath + bookname)
         print("Created workbook")
     else:
         pass
 
-    # readvideo(0)
+    readvideo(0, dirpath + bookname)
