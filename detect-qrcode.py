@@ -7,9 +7,9 @@ import tkinter
 import tkinter.filedialog
 import tkinter.messagebox
 
-import openpyxl
 import cv2 as cv
 import numpy as np
+import openpyxl
 import pyautogui
 from pyzbar.pyzbar import decode
 
